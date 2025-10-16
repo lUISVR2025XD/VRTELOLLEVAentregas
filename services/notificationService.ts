@@ -1,3 +1,4 @@
+
 import { Notification } from '../types';
 
 type NotificationListener = (notification: Notification) => void;

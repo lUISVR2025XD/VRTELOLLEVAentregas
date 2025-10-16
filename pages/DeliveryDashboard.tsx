@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Profile, Order, OrderStatus, DeliveryPerson, UserRole, QuickMessage, Location, Document } from '../types';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Profile, Order, OrderStatus, DeliveryPerson, UserRole, QuickMessage, Location, Document, Business } from '../types';
 import { deliveryService } from '../services/deliveryService';
 import { orderService } from '../services/orderService';
 import { notificationService } from '../services/notificationService';
@@ -11,8 +11,9 @@ import StatsCard from '../components/ui/StatsCard';
 import ToggleSwitch from '../components/ui/ToggleSwitch';
 import OrderTrackingMap from '../components/maps/OrderTrackingMap';
 import OrderDetailsModal from '../components/shared/OrderDetailsModal';
-import { Bike, ClipboardList, Package, DollarSign, CheckCircle, ThumbsUp, MessageSquare, User, Upload, Trash2, Save, Loader, Phone, MapPin, FileText } from 'lucide-react';
+import { Bike, ClipboardList, Package, DollarSign, CheckCircle, ThumbsUp, MessageSquare, User, Upload, Trash2, Save, Loader, Phone, MapPin, FileText, Briefcase } from 'lucide-react';
 import { QUICK_MESSAGES_DELIVERY, ORDER_STATUS_MAP } from '../constants';
+import { businessService } from '../services/businessService';
 
 type DeliveryView = 'available' | 'active' | 'history' | 'profile';
 type DocumentFile = { file?: File; preview: string; name: string; type: 'image' | 'pdf'; url?: string };
@@ -33,6 +34,7 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
     const [deliveryPosition, setDeliveryPosition] = useState<Location | undefined>(undefined);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [businesses, setBusinesses] = useState<Business[]>([]);
 
     // Profile form state
     const [profileForm, setProfileForm] = useState({ name: '', phone: '', address: '', vehicle: '' });
@@ -43,12 +45,14 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
     const fetchAllData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const [personData, allOrders] = await Promise.all([
+            const [personData, allOrders, businessesData] = await Promise.all([
                 deliveryService.getAllDeliveryPeople().then(people => people.find(p => p.id === user.id)),
-                orderService.getOrders({})
+                orderService.getOrders({}),
+                businessService.getAllBusinesses()
             ]);
             
             setDeliveryPerson(personData || null);
+            setBusinesses(businessesData);
             if (personData) {
                 setProfileForm({
                     name: personData.name,
@@ -121,6 +125,13 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
         }
         return () => clearInterval(intervalId);
     }, [activeOrder, currentView]);
+
+    // FIX: Moved useMemo from the renderProfile function to the top level.
+    // This ensures hooks are always called in the same order, fixing a conditional hook error.
+    const affiliatedBusinessName = useMemo(() => {
+        if (!deliveryPerson?.adscrito_al_negocio_id) return 'Independiente';
+        return businesses.find(b => b.id === deliveryPerson.adscrito_al_negocio_id)?.name || 'Negocio no encontrado';
+    }, [deliveryPerson, businesses]);
 
     const handleToggleOnline = async (isOnline: boolean) => {
         if (deliveryPerson) {
@@ -360,107 +371,121 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
         </div>
     );
     
-    const renderProfile = () => (
-        <div className="space-y-8">
-            <h2 className="text-3xl font-bold text-teal-300">Mi Perfil</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-1 space-y-6">
-                    <Card className="p-6 bg-gray-900/50 border border-teal-500/20 text-center">
-                        <h3 className="text-xl font-bold mb-4 text-teal-300">Fotografía de Perfil</h3>
-                        <img 
-                            src={profileImage.preview || `https://ui-avatars.com/api/?name=${profileForm.name.replace(' ','+')}&background=1A0129&color=fff&size=160`} 
-                            alt="Foto de perfil" 
-                            className="w-40 h-40 object-cover rounded-full mx-auto mb-4 bg-gray-700 border-4 border-teal-500/50"
-                        />
-                        <input type="file" id="profileImage" className="hidden" accept="image/*" onChange={handleProfileImageChange} />
-                        <Button as="label" htmlFor="profileImage" className="w-full justify-center flex items-center gap-2">
-                            <Upload size={18}/> Cambiar Foto
-                        </Button>
-                    </Card>
-                </div>
+    const renderProfile = () => {
+        return (
+            <div className="space-y-8">
+                <h2 className="text-3xl font-bold text-teal-300">Mi Perfil</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-1 space-y-6">
+                        <Card className="p-6 bg-gray-900/50 border border-teal-500/20 text-center">
+                            <h3 className="text-xl font-bold mb-4 text-teal-300">Fotografía de Perfil</h3>
+                            <img 
+                                src={profileImage.preview || `https://ui-avatars.com/api/?name=${profileForm.name.replace(' ','+')}&background=1A0129&color=fff&size=160`} 
+                                alt="Foto de perfil" 
+                                className="w-40 h-40 object-cover rounded-full mx-auto mb-4 bg-gray-700 border-4 border-teal-500/50"
+                            />
+                            <input type="file" id="profileImage" className="hidden" accept="image/*" onChange={handleProfileImageChange} />
+                            <Button as="label" htmlFor="profileImage" className="w-full justify-center flex items-center gap-2">
+                                <Upload size={18}/> Cambiar Foto
+                            </Button>
+                        </Card>
+                    </div>
 
-                <div className="lg:col-span-2">
-                    <Card className="p-6 bg-gray-900/50 border border-teal-500/20">
-                        <h3 className="text-xl font-bold mb-6 text-teal-300">Información Personal y Vehículo</h3>
-                        <div className="space-y-6">
-                           <div className="flex items-center gap-4">
-                                <User className="w-6 h-6 text-teal-400 flex-shrink-0"/>
-                                <div className="flex-grow">
-                                    <label className="text-sm text-gray-400">Nombre Completo</label>
-                                    <input name="name" type="text" value={profileForm.name} onChange={handleProfileInputChange} className="w-full bg-transparent border-b-2 border-white/20 focus:outline-none focus:border-teal-400 text-lg"/>
-                                </div>
-                           </div>
-                            <div className="flex items-center gap-4">
-                                <Phone className="w-6 h-6 text-teal-400 flex-shrink-0"/>
-                                <div className="flex-grow">
-                                    <label className="text-sm text-gray-400">Teléfono</label>
-                                    <input name="phone" type="tel" value={profileForm.phone} onChange={handleProfileInputChange} className="w-full bg-transparent border-b-2 border-white/20 focus:outline-none focus:border-teal-400 text-lg"/>
-                                </div>
-                           </div>
-                            <div className="flex items-center gap-4">
-                                <MapPin className="w-6 h-6 text-teal-400 flex-shrink-0"/>
-                                <div className="flex-grow">
-                                    <label className="text-sm text-gray-400">Domicilio</label>
-                                    <input name="address" type="text" value={profileForm.address} onChange={handleProfileInputChange} className="w-full bg-transparent border-b-2 border-white/20 focus:outline-none focus:border-teal-400 text-lg"/>
-                                </div>
-                           </div>
-                            <div className="flex items-center gap-4">
-                                <Bike className="w-6 h-6 text-teal-400 flex-shrink-0"/>
-                                <div className="flex-grow">
-                                    <label className="text-sm text-gray-400">Vehículo</label>
-                                    <input name="vehicle" type="text" value={profileForm.vehicle} onChange={handleProfileInputChange} className="w-full bg-transparent border-b-2 border-white/20 focus:outline-none focus:border-teal-400 text-lg"/>
-                                </div>
-                           </div>
-                        </div>
-                    </Card>
-                </div>
-            </div>
-
-            <Card className="p-6 bg-gray-900/50 border border-teal-500/20">
-                <h3 className="text-xl font-bold mb-2 text-teal-300">Documentos</h3>
-                <p className="text-sm text-gray-400 mb-4">Sube tu licencia, tarjeta de circulación, etc. (Imágenes o PDF).</p>
-                <input type="file" id="documents" className="hidden" accept="image/*,.pdf" multiple onChange={handleDocumentChange} />
-                <Button as="label" htmlFor="documents" className="w-full md:w-auto justify-center flex items-center gap-2">
-                    <Upload size={18}/> Cargar Documentos
-                </Button>
-                
-                <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    {documents.map(doc => (
-                        <div key={doc.name} className="relative group border-2 border-white/10 rounded-lg p-2">
-                           {doc.type === 'image' ? (
-                                <img src={doc.preview} alt={doc.name} className="w-full h-32 object-contain rounded-md"/>
-                           ) : (
-                               <div className="w-full h-32 bg-gray-800 rounded-md flex flex-col items-center justify-center p-2">
-                                    <FileText className="w-10 h-10 text-red-400 mb-2"/>
+                    <div className="lg:col-span-2">
+                        <Card className="p-6 bg-gray-900/50 border border-teal-500/20">
+                            <h3 className="text-xl font-bold mb-6 text-teal-300">Información Personal y Vehículo</h3>
+                            <div className="space-y-6">
+                               <div className="flex items-center gap-4">
+                                   <Briefcase className="w-6 h-6 text-teal-400 flex-shrink-0"/>
+                                   <div className="flex-grow">
+                                       <label className="text-sm text-gray-400">Adscrito al Negocio</label>
+                                       <p className="w-full bg-transparent text-lg text-gray-300 pt-1">{affiliatedBusinessName}</p>
+                                       <p className="text-xs text-gray-500">Este campo solo puede ser modificado por un administrador.</p>
+                                   </div>
                                </div>
-                           )}
-                            <p className="text-xs text-center break-words mt-2 text-gray-300">{doc.name}</p>
-                           <button onClick={() => removeDocument(doc.name)} className="absolute -top-2 -right-2 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Trash2 size={14}/>
-                           </button>
-                        </div>
-                    ))}
+                               <div className="flex items-center gap-4">
+                                    <User className="w-6 h-6 text-teal-400 flex-shrink-0"/>
+                                    <div className="flex-grow">
+                                        <label className="text-sm text-gray-400">Nombre Completo</label>
+                                        <input name="name" type="text" value={profileForm.name} onChange={handleProfileInputChange} className="w-full bg-transparent border-b-2 border-white/20 focus:outline-none focus:border-teal-400 text-lg"/>
+                                    </div>
+                               </div>
+                                <div className="flex items-center gap-4">
+                                    <Phone className="w-6 h-6 text-teal-400 flex-shrink-0"/>
+                                    <div className="flex-grow">
+                                        <label className="text-sm text-gray-400">Teléfono</label>
+                                        <input name="phone" type="tel" value={profileForm.phone} onChange={handleProfileInputChange} className="w-full bg-transparent border-b-2 border-white/20 focus:outline-none focus:border-teal-400 text-lg"/>
+                                    </div>
+                               </div>
+                                <div className="flex items-center gap-4">
+                                    <MapPin className="w-6 h-6 text-teal-400 flex-shrink-0"/>
+                                    <div className="flex-grow">
+                                        <label className="text-sm text-gray-400">Domicilio</label>
+                                        <input name="address" type="text" value={profileForm.address} onChange={handleProfileInputChange} className="w-full bg-transparent border-b-2 border-white/20 focus:outline-none focus:border-teal-400 text-lg"/>
+                                    </div>
+                               </div>
+                                <div className="flex items-center gap-4">
+                                    <Bike className="w-6 h-6 text-teal-400 flex-shrink-0"/>
+                                    <div className="flex-grow">
+                                        <label className="text-sm text-gray-400">Vehículo</label>
+                                        <input name="vehicle" type="text" value={profileForm.vehicle} onChange={handleProfileInputChange} className="w-full bg-transparent border-b-2 border-white/20 focus:outline-none focus:border-teal-400 text-lg"/>
+                                    </div>
+                               </div>
+                            </div>
+                        </Card>
+                    </div>
                 </div>
-            </Card>
 
-            <div className="flex justify-end mt-8">
-                <Button onClick={handleSaveProfile} disabled={isSaving} className="text-lg !bg-teal-600 hover:!bg-teal-700 flex items-center gap-2">
-                    {isSaving ? <Loader className="animate-spin" size={20}/> : <Save size={20}/>}
-                    {isSaving ? 'Guardando...' : 'Guardar Cambios'}
-                </Button>
+                <Card className="p-6 bg-gray-900/50 border border-teal-500/20">
+                    <h3 className="text-xl font-bold mb-2 text-teal-300">Documentos</h3>
+                    <p className="text-sm text-gray-400 mb-4">Sube tu licencia, tarjeta de circulación, etc. (Imágenes o PDF).</p>
+                    <input type="file" id="documents" className="hidden" accept="image/*,.pdf" multiple onChange={handleDocumentChange} />
+                    <Button as="label" htmlFor="documents" className="w-full md:w-auto justify-center flex items-center gap-2">
+                        <Upload size={18}/> Cargar Documentos
+                    </Button>
+                    
+                    <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        {documents.map(doc => (
+                            <div key={doc.name} className="relative group border-2 border-white/10 rounded-lg p-2">
+                               {doc.type === 'image' ? (
+                                    <img src={doc.preview} alt={doc.name} className="w-full h-32 object-contain rounded-md"/>
+                               ) : (
+                                   <div className="w-full h-32 bg-gray-800 rounded-md flex flex-col items-center justify-center p-2">
+                                        <FileText className="w-10 h-10 text-red-400 mb-2"/>
+                                   </div>
+                               )}
+                                <p className="text-xs text-center break-words mt-2 text-gray-300">{doc.name}</p>
+                               <button onClick={() => removeDocument(doc.name)} className="absolute -top-2 -right-2 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Trash2 size={14}/>
+                               </button>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+
+                <div className="flex justify-end mt-8">
+                    <Button onClick={handleSaveProfile} disabled={isSaving} className="text-lg !bg-teal-600 hover:!bg-teal-700 flex items-center gap-2">
+                        {isSaving ? <Loader className="animate-spin" size={20}/> : <Save size={20}/>}
+                        {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+                    </Button>
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
 
     const renderContent = () => {
-        if(activeOrder) return renderActiveDelivery();
+        // Always allow rendering profile, even with an active order
+        if (currentView === 'profile') {
+            return renderProfile();
+        }
+        if (activeOrder) {
+            return renderActiveDelivery();
+        }
         switch(currentView){
             case 'available': return renderAvailableOrders();
             case 'history': return renderHistory();
-            case 'profile': return renderProfile();
-            case 'active': return renderActiveDelivery();
-            default: return null;
+            default: return renderAvailableOrders();
         }
     }
     
@@ -499,14 +524,15 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ user, onLogout })
                  <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-8">
                      <div className="flex items-center gap-4">
                          {navItems.map(item => (
-                            <button key={item.id} onClick={() => { if(!activeOrder) setCurrentView(item.id as DeliveryView) }}
-                                disabled={!!activeOrder}
-                                className={`flex items-center gap-2 p-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${currentView === item.id && !activeOrder ? 'bg-teal-600 text-white' : 'hover:bg-white/10'}`}>
+                            <button key={item.id}
+                                onClick={() => setCurrentView(item.id as DeliveryView)}
+                                disabled={!!activeOrder && item.id !== 'profile'}
+                                className={`flex items-center gap-2 p-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${currentView === item.id ? 'bg-teal-600 text-white' : 'hover:bg-white/10'}`}>
                                 <item.icon size={20} />
                                 <span className="font-semibold">{item.label}</span>
                             </button>
                          ))}
-                         {activeOrder && (
+                         {activeOrder && currentView !== 'profile' && (
                             <div className='flex items-center gap-2 p-3 rounded-lg bg-purple-800 text-white'>
                                 <Bike size={20}/>
                                 <span className="font-semibold">Entrega Activa</span>

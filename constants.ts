@@ -42,4 +42,11 @@ export const QUICK_MESSAGES_CLIENT = [
     "Entregar en recepción",
 ];
 
+export const PIZZA_INGREDIENTS = [
+    'Pepperoni', 'Champiñones', 'Pimiento Verde', 'Cebolla', 'Aceitunas Negras', 'Jamón', 'Piña',
+    'Salchicha Italiana', 'Tocino', 'Carne Molida', 'Pollo', 'Jalapeños', 'Tomate', 'Anchoas',
+    'Espinacas', 'Queso Extra', 'Queso de Cabra', 'Provolone', 'Parmesano',
+];
+
+
 export const MOCK_USER_LOCATION = { lat: 19.4326, lng: -99.1332 }; // Mexico City Zocalo

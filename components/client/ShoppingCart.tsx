@@ -104,6 +104,53 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ isOpen, onClose, cart, busi
             _deliveryFee: deliveryFee,
         };
         
+        // --- NEW WHATSAPP LOGIC ---
+        const generateWhatsAppMessage = () => {
+            const itemsList = cart.map(item => {
+                let itemString = `- ${item.quantity}x ${item.product.name} - $${(item.product.price * item.quantity).toFixed(2)}`;
+                if (item.pizza_configuration) {
+                    itemString += `\n  _(${item.pizza_configuration})_`;
+                }
+                return itemString;
+            }).join('\n');
+
+            const message = `
+¡Nuevo Pedido desde vrtelolleva! 🚀
+
+*Negocio:* ${business?.name}
+
+*Pedido:*
+${itemsList}
+
+-------------------------
+*Subtotal:* $${subtotal.toFixed(2)}
+*Total (SIN ENVÍO):* *$${subtotal.toFixed(2)}*
+-------------------------
+
+*Ubicación de Entrega (Coordenadas):*
+${deliveryLocation.lat}, ${deliveryLocation.lng}
+(Abrir en Google Maps: https://maps.google.com/?q=${deliveryLocation.lat},${deliveryLocation.lng})
+
+*Notas Especiales:*
+${notes || 'Ninguna'}
+
+*Forma de Pago:*
+${paymentMethod === PaymentMethod.CASH ? 'Efectivo' : 'Transferencia'}
+
+¡Gracias!
+            `;
+            // Using trim to remove leading/trailing whitespace from template literal
+            return message.trim();
+        };
+
+        const phoneNumber = '525534208385'; // The user-provided number without '+'
+        const message = generateWhatsAppMessage();
+        const encodedMessage = encodeURIComponent(message);
+        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+
+        window.open(whatsappUrl, '_blank');
+        // --- END NEW WHATSAPP LOGIC ---
+
         onPlaceOrder(orderDetails);
     };
     
@@ -136,18 +183,25 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ isOpen, onClose, cart, busi
                         <h3 className="font-semibold mb-2 text-lg">De: <span className="text-purple-400">{business.name}</span></h3>
                         <ul className="divide-y divide-white/10">
                             {cart.map(item => (
-                                <li key={item.product.id} className="py-3 flex items-center">
-                                    <div className="flex-grow">
-                                        <p className="font-semibold">{item.product.name}</p>
-                                        <p className="text-sm text-gray-400">${item.product.price.toFixed(2)}</p>
+                                <li key={`${item.product.id}-${item.pizza_configuration}`} className="py-3">
+                                    <div className="flex items-center">
+                                      <div className="flex-grow">
+                                          <p className="font-semibold">{item.product.name}</p>
+                                          <p className="text-sm text-gray-400">${item.product.price.toFixed(2)}</p>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                          <button onClick={() => onUpdateQuantity(item.product.id, item.quantity - 1)} className="p-1 rounded-full bg-white/10"><Minus size={16}/></button>
+                                          <span>{item.quantity}</span>
+                                          <button onClick={() => onUpdateQuantity(item.product.id, item.quantity + 1)} className="p-1 rounded-full bg-white/10"><Plus size={16}/></button>
+                                      </div>
+                                      <span className="w-20 text-right font-semibold">${(item.product.price * item.quantity).toFixed(2)}</span>
+                                      <button onClick={() => onRemoveItem(item.product.id)} className="ml-2 text-red-500 hover:text-red-400"><Trash2 size={18}/></button>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <button onClick={() => onUpdateQuantity(item.product.id, item.quantity - 1)} className="p-1 rounded-full bg-white/10"><Minus size={16}/></button>
-                                        <span>{item.quantity}</span>
-                                        <button onClick={() => onUpdateQuantity(item.product.id, item.quantity + 1)} className="p-1 rounded-full bg-white/10"><Plus size={16}/></button>
-                                    </div>
-                                    <span className="w-20 text-right font-semibold">${(item.product.price * item.quantity).toFixed(2)}</span>
-                                    <button onClick={() => onRemoveItem(item.product.id)} className="ml-2 text-red-500 hover:text-red-400"><Trash2 size={18}/></button>
+                                    {item.pizza_configuration && (
+                                        <div className="text-xs text-purple-300 pl-2 mt-1 italic bg-purple-900/20 p-2 rounded-md">
+                                            {item.pizza_configuration}
+                                        </div>
+                                    )}
                                 </li>
                             ))}
                         </ul>

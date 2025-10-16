@@ -1,3 +1,4 @@
+
 import { Profile, UserRole, Location } from '../types';
 
 // In a real app, this would be a secure, hashed password in a database.
@@ -16,6 +17,7 @@ const initializeMockDB = (): UserCredentials[] => {
     const mockUsers: UserCredentials[] = [
         { id: 'client-1', name: 'Ana Cliente', role: UserRole.CLIENT, email: 'ana@cliente.com', location: { lat: 19.4350, lng: -99.1350 }, password_insecure: 'password123', isActive: true, address: 'Avenida Siempre Viva 742, CDMX' },
         { id: 'b1', name: 'Taquería El Pastor', role: UserRole.BUSINESS, email: 'elpastor@negocio.com', location: { lat: 19.4300, lng: -99.1300 }, password_insecure: 'password123', isActive: true },
+        { id: 'b3', name: 'Pizza Bella', role: UserRole.BUSINESS, email: 'pizza@negocio.com', location: { lat: 19.4290, lng: -99.1350 }, password_insecure: 'password123', isActive: true },
         { id: 'delivery-1', name: 'Pedro Repartidor', role: UserRole.DELIVERY, email: 'pedro@repartidor.com', location: { lat: 19.4280, lng: -99.1380 }, password_insecure: 'password123', isActive: true },
         { id: 'admin-1', name: 'Super Admin', role: UserRole.ADMIN, email: 'admin@pronto.com', password_insecure: 'admin123', isActive: true },
         { id: 'client-2', name: 'Juan Inactivo', role: UserRole.CLIENT, email: 'juan@inactivo.com', location: { lat: 19.4350, lng: -99.1350 }, password_insecure: 'password123', isActive: false },

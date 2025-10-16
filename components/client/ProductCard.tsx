@@ -2,7 +2,7 @@ import React from 'react';
 import { Product } from '../../types';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Edit } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
@@ -11,6 +11,8 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, businessName, onAddToCart }) => {
+  const isConfigurable = product.is_configurable_pizza;
+  
   return (
     <Card className="flex flex-col bg-white/10 border border-white/20 transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-purple-900/50">
       <img src={product.image} alt={product.name} className="w-full h-40 object-cover" />
@@ -20,8 +22,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, businessName, onAddT
         <div className="flex justify-between items-center mt-4">
           <span className="text-xl font-bold">${product.price.toFixed(2)}</span>
           <Button onClick={() => onAddToCart(product)} className="flex items-center !px-3 !py-2">
-            <ShoppingCart className="w-5 h-5 mr-2" />
-            Pedir
+            {isConfigurable ? <Edit className="w-5 h-5 mr-2" /> : <ShoppingCart className="w-5 h-5 mr-2" />}
+            {isConfigurable ? 'Armar' : 'Pedir'}
           </Button>
         </div>
       </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Business, Location, Product, BusinessLoad } from '../types';
 import { MOCK_USER_LOCATION } from '../constants';
@@ -26,7 +27,7 @@ const MOCK_PROMOTIONS: Promotion[] = [
 const MOCK_POPULAR_PRODUCTS: (Product & { businessName: string })[] = [
     { id: 'p1', name: 'Alambre de Pechuga', price: 145, business_id: 'b1', category: 'Main', description: 'Delicioso alambre con piña y cilantro.', image: 'https://images.unsplash.com/photo-1551601651-2a8555f1a136?q=80&w=1770&auto=format=fit=crop', businessName: 'Taquería El Pastor', is_available: true },
     { id: 'p2', name: 'Aros de Cebolla 6 Pzas', price: 80, business_id: 'b3', category: 'Main', description: 'Clásica pizza con pepperoni de alta calidad.', image: 'https://images.unsplash.com/photo-1594041183521-72322374c498?q=80&w=1770&auto=format=fit=crop', businessName: 'Pizza Bella', is_available: true },
-    { id: 'p3', name: 'Doble Queso Hamburguesa', price: 150, business_id: 'b4', category: 'Main', description: 'Con doble carne, doble queso y tocino.', image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?q=80&w=2072&auto=format=fit=crop', businessName: 'Burger Joint', is_available: true },
+    { id: 'p3', name: 'Doble Queso Hamburguesa', price: 150, business_id: 'b4', category: 'Main', description: 'Con doble carne, doble queso y tocino.', image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?q=80&w=2072&auto=format&fit=crop', businessName: 'Burger Joint', is_available: true },
     { id: 'p4', name: 'California Roll', price: 120, business_id: 'b2', category: 'Main', description: 'Rollo de sushi con surimi, aguacate y pepino.', image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=2070&auto=format=fit=crop', businessName: 'Sushi Express', is_available: true },
 ];
 
@@ -42,7 +43,7 @@ const fetchNearbyBusinesses = async (location: Location): Promise<Business[]> =>
         // FIX: Replaced `delivery_fee` with `fixed_delivery_fee` to match the Business interface.
         { id: 'b2', name: 'Sushi Express', category: 'Japonesa', rating: 4.6, delivery_time: '30-40 min', fixed_delivery_fee: 0, image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?q=80&w=1887&auto=format&fit=crop', location: { lat: 19.4350, lng: -99.1400 }, is_open: true, phone: '5587654321', address: 'Avenida Siempre Viva 742', email: 'hola@sushiexpress.com', opening_hours: 'M-S: 13:00 - 22:00', current_load: BusinessLoad.BUSY },
         // FIX: Replaced `delivery_fee` with `fixed_delivery_fee` to match the Business interface.
-        { id: 'b3', name: 'Pizza Bella', category: 'Italiana', rating: 4.9, delivery_time: '20-30 min', fixed_delivery_fee: 25, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=2070&auto=format&fit=crop', location: { lat: 19.4290, lng: -99.1350 }, is_open: false, phone: '5555555555', address: 'Plaza Central 1', email: 'info@pizzabella.com', opening_hours: 'L-V: 11:00 - 21:00', current_load: BusinessLoad.NORMAL },
+        { id: 'b3', name: 'Pizza Bella', category: 'Italiana', rating: 4.9, delivery_time: '20-30 min', fixed_delivery_fee: 25, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=2070&auto=format&fit=crop', location: { lat: 19.4290, lng: -99.1350 }, is_open: true, phone: '5555555555', address: 'Plaza Central 1', email: 'info@pizzabella.com', opening_hours: 'L-V: 11:00 - 21:00', current_load: BusinessLoad.NORMAL },
         // FIX: Replaced `delivery_fee` with `fixed_delivery_fee` to match the Business interface.
         { id: 'b4', name: 'Burger Joint', category: 'Americana', rating: 4.5, delivery_time: '35-45 min', fixed_delivery_fee: 40, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=1899&auto=format&fit=crop', location: { lat: 19.4380, lng: -99.1310 }, is_open: true, phone: '5511223344', address: 'Boulevard del Sabor 55', email: 'burgers@joint.com', opening_hours: 'L-D: 10:00 - 22:30', current_load: BusinessLoad.VERY_BUSY },
       ]);
@@ -188,7 +189,7 @@ const HomePage: React.FC<HomePageProps> = ({ onLoginRequest }) => {
                     <div className="text-center py-16">
                         <Frown className="mx-auto h-16 w-16 text-gray-400" />
                         <h3 className="mt-4 text-2xl font-semibold">No se encontraron resultados</h3>
-                        <p className="mt-2 text-gray-400">Intenta con una búsqueda o filtro diferente.</p>
+                        <p className="mt-2 text-gray-500">Intenta con una búsqueda o filtro diferente.</p>
                     </div>
                 )}
             </main>

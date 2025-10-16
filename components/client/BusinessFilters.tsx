@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Business, FilterState } from '../../types';
 import Card from '@/components/ui/Card';
@@ -102,7 +103,7 @@ const BusinessFilters: React.FC<BusinessFiltersProps> = ({ businesses, filters, 
                     : 'border-transparent text-gray-400 hover:text-white'
                 }`}
                 >
-                {category}
+                    {category}
                 </button>
             ))}
         </div>

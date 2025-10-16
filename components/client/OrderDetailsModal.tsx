@@ -42,12 +42,19 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, order, on
                 <h4 className="font-bold text-lg mb-2 flex items-center"><ShoppingBag className="w-5 h-5 mr-2 text-purple-400"/> Resumen del Pedido</h4>
                 <ul className="divide-y divide-white/10 border-y border-white/10">
                     {order.items.map(item => (
-                        <li key={item.product.id} className="py-2 flex justify-between items-center text-sm">
-                            <div>
-                                <span className="font-semibold text-white">{item.quantity}x</span>
-                                <span className="text-gray-300 ml-2">{item.product.name}</span>
+                        <li key={item.product.id} className="py-2 text-sm">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <span className="font-semibold text-white">{item.quantity}x</span>
+                                    <span className="text-gray-300 ml-2">{item.product.name}</span>
+                                </div>
+                                <span className="text-gray-200">${(item.product.price * item.quantity).toFixed(2)}</span>
                             </div>
-                            <span className="text-gray-200">${(item.product.price * item.quantity).toFixed(2)}</span>
+                            {item.pizza_configuration && (
+                                <p className="text-xs text-purple-300 pl-6 italic mt-1">
+                                    ↳ {item.pizza_configuration}
+                                </p>
+                            )}
                         </li>
                     ))}
                 </ul>

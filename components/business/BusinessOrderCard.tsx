@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Order, OrderStatus, PaymentMethod } from '../../types';
 import Card from '@/components/ui/Card';
@@ -129,9 +130,16 @@ const BusinessOrderCard: React.FC<BusinessOrderCardProps> = ({ order, onUpdateSt
                     </div>
                     <ul className="space-y-1 mb-3 max-h-24 overflow-y-auto pr-2">
                         {order.items.map(item => (
-                            <li key={item.product.id} className="text-sm flex justify-between">
-                                <span className="truncate pr-2">{item.quantity}x {item.product.name}</span>
-                                <span className="font-mono flex-shrink-0">${(item.product.price * item.quantity).toFixed(2)}</span>
+                            <li key={item.product.id} className="text-sm">
+                               <div className="flex justify-between">
+                                  <span className="truncate pr-2">{item.quantity}x {item.product.name}</span>
+                                  <span className="font-mono flex-shrink-0">${(item.product.price * item.quantity).toFixed(2)}</span>
+                               </div>
+                                {item.pizza_configuration && (
+                                    <p className="text-xs text-purple-300 pl-4 italic">
+                                        ↳ {item.pizza_configuration}
+                                    </p>
+                                )}
                             </li>
                         ))}
                     </ul>

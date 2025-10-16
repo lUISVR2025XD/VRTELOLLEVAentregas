@@ -14,7 +14,11 @@ const MOCK_PRODUCTS: Product[] = [
     { id: 'p6', business_id: 'b2', name: 'Té Verde', category: 'Bebidas', price: 30, description: 'Té verde japonés, caliente o frío.', image: 'https://picsum.photos/seed/te-verde/400/300', is_available: true },
 
     // Pizza Bella (b3)
-    { id: 'p7', business_id: 'b3', name: 'Pizza Pepperoni Grande', category: 'Pizzas', price: 180, description: 'Clásica pizza con pepperoni de alta calidad.', image: 'https://images.unsplash.com/photo-1594041183521-72322374c498?q=80&w=1770&auto=format=fit=crop', is_available: true },
+    { id: 'p7-1', business_id: 'b3', name: 'Arma tu Pizza - Chica 3 Ingredientes', category: 'Pizzas', price: 120, description: 'Crea tu propia combinación perfecta.', image: 'https://images.unsplash.com/photo-1594041183521-72322374c498?q=80&w=1770&auto=format=fit=crop', is_available: true, is_configurable_pizza: true },
+    { id: 'p7-2', business_id: 'b3', name: 'Arma tu Pizza - Mediana 4 Ingredientes', category: 'Pizzas', price: 165, description: 'Crea tu propia combinación perfecta.', image: 'https://images.unsplash.com/photo-1594041183521-72322374c498?q=80&w=1770&auto=format=fit=crop', is_available: true, is_configurable_pizza: true },
+    { id: 'p7-3', business_id: 'b3', name: 'Arma tu Pizza - Grande 5 Ingredientes', category: 'Pizzas', price: 210, description: 'Crea tu propia combinación perfecta.', image: 'https://images.unsplash.com/photo-1594041183521-72322374c498?q=80&w=1770&auto=format=fit=crop', is_available: true, is_configurable_pizza: true },
+    { id: 'p7-4', business_id: 'b3', name: 'Pizza Hawaiana', category: 'Pizzas', price: 150, description: 'La clásica pizza de jamón y piña.', image: 'https://picsum.photos/seed/hawaiian/400/300', is_available: true },
+
 
     // Burger Joint (b4)
     { id: 'p8', business_id: 'b4', name: 'Doble Queso Hamburguesa', category: 'Hamburguesas', price: 150, description: 'Con doble carne, doble queso y tocino.', image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?q=80&w=2072&auto=format=fit=crop', is_available: true },

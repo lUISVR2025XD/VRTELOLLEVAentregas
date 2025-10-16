@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export enum UserRole {
@@ -55,6 +56,7 @@ export interface Product {
   image: string;
   category: string;
   is_available: boolean;
+  is_configurable_pizza?: boolean;
 }
 
 export interface Document {
@@ -102,11 +104,13 @@ export interface DeliveryPerson {
   isActive: boolean;
   image?: string;
   address?: string;
+  adscrito_al_negocio_id?: string;
 }
 
 export interface CartItem {
   product: Product;
   quantity: number;
+  pizza_configuration?: string;
 }
 
 export interface Order {

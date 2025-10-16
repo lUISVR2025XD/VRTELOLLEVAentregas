@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Business, Product, BusinessLoad } from '../types';
 import Card from '../components/ui/Card';
@@ -8,8 +9,9 @@ import { ChevronLeft, MapPin, Phone, Star, Clock as ClockIcon, Search } from 'lu
 
 interface BusinessDetailPageProps {
   business: Business;
-  onAddToCart: (product: Product) => void;
+  onAddToCart: (product: Product, pizzaConfiguration?: string) => void;
   onGoBack: () => void;
+  onGoToPizzaBuilder: () => void;
 }
 
 const getAdjustedDeliveryTime = (deliveryTime: string, load?: BusinessLoad): { text: string; isBusy: boolean } => {
@@ -43,21 +45,34 @@ const MOCK_REVIEWS = [
     { id: 3, author: 'Carlos S.', rating: 5, comment: 'El mejor lugar de la zona, siempre pido de aquí.' },
 ];
 
-const BusinessDetailPage: React.FC<BusinessDetailPageProps> = ({ business, onAddToCart, onGoBack }) => {
+const BusinessDetailPage: React.FC<BusinessDetailPageProps> = ({ business, onAddToCart, onGoBack, onGoToPizzaBuilder }) => {
   const [productSearch, setProductSearch] = useState('');
   const { text: adjustedTime, isBusy } = getAdjustedDeliveryTime(business.delivery_time, business.current_load);
 
+  const { regularProducts, configurablePizzas } = useMemo(() => {
+    const regular: Product[] = [];
+    const configurable: Product[] = [];
+    (business.products || []).forEach(p => {
+        if (p.is_configurable_pizza) {
+            configurable.push(p);
+        } else {
+            regular.push(p);
+        }
+    });
+    return { regularProducts: regular, configurablePizzas: configurable };
+  }, [business.products]);
+
   const filteredProducts = useMemo(() => {
-    if (!business.products) return [];
+    if (!regularProducts) return [];
     if (!productSearch) {
-      return business.products;
+      return regularProducts;
     }
     const lowercasedQuery = productSearch.toLowerCase();
-    return business.products.filter(product => 
+    return regularProducts.filter(product => 
       product.name.toLowerCase().includes(lowercasedQuery) ||
       product.category.toLowerCase().includes(lowercasedQuery)
     );
-  }, [business.products, productSearch]);
+  }, [regularProducts, productSearch]);
 
 
   return (
@@ -106,12 +121,24 @@ const BusinessDetailPage: React.FC<BusinessDetailPageProps> = ({ business, onAdd
                             />
                         </div>
                     </div>
+
+                    {configurablePizzas.length > 0 && (
+                        <Card className="mb-6 p-4 bg-gradient-to-r from-purple-600 to-teal-500 flex flex-col md:flex-row items-center justify-between gap-4">
+                            <div>
+                                <h3 className="text-2xl font-bold">¡Arma tu Pizza!</h3>
+                                <p className="text-purple-100">Crea tu combinación perfecta a tu gusto.</p>
+                            </div>
+                            <Button onClick={onGoToPizzaBuilder} className="!bg-white !text-purple-700 font-bold hover:!bg-gray-200 w-full md:w-auto flex-shrink-0">
+                                Empezar a Crear
+                            </Button>
+                        </Card>
+                    )}
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {business.products && business.products.length > 0 ? (
+                        {regularProducts && regularProducts.length > 0 ? (
                             filteredProducts.length > 0 ? (
                                 filteredProducts.map(product => (
-                                    <ProductCard key={product.id} product={product} onAddToCart={onAddToCart} businessName={business.name} />
+                                    <ProductCard key={product.id} product={product} onAddToCart={() => onAddToCart(product)} businessName={business.name} />
                                 ))
                             ) : (
                                 <div className="md:col-span-2 text-center py-10 text-gray-400">

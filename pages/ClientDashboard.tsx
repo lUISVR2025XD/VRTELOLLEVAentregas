@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Profile, Order, OrderStatus, CartItem, Business, Location, Product, UserRole, Notification, QuickMessage, BusinessLoad, PaymentMethod } from '../types';
 import OrderTrackingMap from '../components/maps/OrderTrackingMap';
@@ -19,6 +20,7 @@ import MyOrdersPage from './MyOrdersPage';
 import { useBusinessFilter } from '../hooks/useBusinessFilter';
 import { businessService } from '../services/businessService';
 import { productService } from '../services/productService';
+import PizzaBuilderPage from './PizzaBuilderPage';
 
 
 // Mock API call from HomePage
@@ -43,7 +45,7 @@ interface ClientDashboardProps {
   onLogout: () => void;
 }
 
-type ClientView = 'shopping' | 'businessDetail' | 'tracking' | 'history' | 'profile';
+type ClientView = 'shopping' | 'businessDetail' | 'tracking' | 'history' | 'profile' | 'pizzaBuilder';
 
 const isTrackable = (status: OrderStatus) => {
     return [
@@ -80,7 +82,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
 
     // State for clear cart confirmation modal
     const [isClearCartModalVisible, setIsClearCartModalVisible] = useState(false);
-    const [productToAdd, setProductToAdd] = useState<Product | null>(null);
+    const [productToAdd, setProductToAdd] = useState<{product: Product, config?: string} | null>(null);
     
     // State for profile form
     const [profileForm, setProfileForm] = useState({
@@ -268,12 +270,12 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
         });
     };
 
-    const handleAddToCart = (product: Product) => {
+    const handleAddToCart = (product: Product, pizza_configuration?: string) => {
         const productBusiness = businesses.find(b => b.id === product.business_id);
         if (!productBusiness) return;
 
         if (cartBusiness && cartBusiness.id !== product.business_id) {
-            setProductToAdd(product);
+            setProductToAdd({product, config: pizza_configuration});
             setIsClearCartModalVisible(true);
             return;
         }
@@ -283,11 +285,11 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
         }
         
         setCart(prevCart => {
-            const existingItem = prevCart.find(item => item.product.id === product.id);
+            const existingItem = prevCart.find(item => item.product.id === product.id && item.pizza_configuration === pizza_configuration);
             if (existingItem) {
-                return prevCart.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+                return prevCart.map(item => item.product.id === product.id && item.pizza_configuration === pizza_configuration ? { ...item, quantity: item.quantity + 1 } : item);
             }
-            return [...prevCart, { product, quantity: 1 }];
+            return [...prevCart, { product, quantity: 1, pizza_configuration }];
         });
 
         notificationService.sendNotification({
@@ -302,15 +304,16 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
     
     const handleConfirmClearCart = () => {
         if (!productToAdd) return;
-        const productBusiness = businesses.find(b => b.id === productToAdd.business_id);
+        const { product, config } = productToAdd;
+        const productBusiness = businesses.find(b => b.id === product.business_id);
         if (productBusiness) {
-            setCart([{ product: productToAdd, quantity: 1 }]);
+            setCart([{ product, quantity: 1, pizza_configuration: config }]);
             setCartBusiness(productBusiness);
             notificationService.sendNotification({
-                id: `add-to-cart-${productToAdd.id}-${Date.now()}`,
+                id: `add-to-cart-${product.id}-${Date.now()}`,
                 role: UserRole.CLIENT,
                 title: 'Producto Agregado',
-                message: `El carrito se limpió y "${productToAdd.name}" se agregó.`,
+                message: `El carrito se limpió y "${product.name}" se agregó.`,
                 type: 'success',
                 icon: ShoppingBag
             });
@@ -396,6 +399,10 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
     const handleGoBackToList = () => {
         setSelectedBusiness(null);
         setCurrentView('shopping');
+    };
+
+    const handleGoToPizzaBuilder = () => {
+        setCurrentView('pizzaBuilder');
     };
 
     const handleTrackOrderFromHistory = (order: Order) => {
@@ -654,7 +661,9 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
                     </main>
                 );
             case 'businessDetail':
-                return selectedBusiness && <BusinessDetailPage business={selectedBusiness} onAddToCart={handleAddToCart} onGoBack={handleGoBackToList} />;
+                return selectedBusiness && <BusinessDetailPage business={selectedBusiness} onAddToCart={handleAddToCart} onGoBack={handleGoBackToList} onGoToPizzaBuilder={handleGoToPizzaBuilder} />;
+            case 'pizzaBuilder':
+                return selectedBusiness && <PizzaBuilderPage business={selectedBusiness} onAddToCart={handleAddToCart} onGoBack={handleGoBackToList} />;
             case 'history':
                 return <MyOrdersPage 
                     orders={pastOrders} 
@@ -708,6 +717,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
             case 'tracking': return 'Seguimiento de Pedido';
             case 'history': return 'Mis Pedidos';
             case 'profile': return 'Mi Perfil';
+            case 'pizzaBuilder': return `Arma tu Pizza en ${selectedBusiness?.name}`;
             case 'businessDetail': return selectedBusiness?.name || APP_NAME;
             case 'shopping':
             default: return APP_NAME;
@@ -719,7 +729,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => 
              <DashboardHeader 
                 userName={clientProfile.name} 
                 onLogout={onLogout} 
-                cartItemCount={cart.length} 
+                cartItemCount={cart.reduce((acc, item) => acc + item.quantity, 0)} 
                 onCartClick={() => setIsCartVisible(true)} 
                 onHistoryClick={() => setCurrentView('history')}
                 onProfileClick={() => setCurrentView('profile')}

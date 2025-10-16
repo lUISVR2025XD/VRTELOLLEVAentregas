@@ -15,6 +15,7 @@ import DropdownMenu, { DropdownMenuItem } from '../components/ui/DropdownMenu';
 import Badge from '../components/ui/Badge';
 import ConfirmationModal from '../components/ui/ConfirmationModal';
 import StarRating from '../components/ui/StarRating';
+import Modal from '../components/ui/Modal';
 
 
 interface AdminDashboardProps {
@@ -97,6 +98,50 @@ const TopItemsChart: React.FC<{ data: { name: string; value: number }[]; isCurre
 
 // --- End Chart Components ---
 
+const AssignmentModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: (businessId: string | undefined) => void;
+    person: DeliveryPerson | null;
+    businesses: Business[];
+}> = ({ isOpen, onClose, onConfirm, person, businesses }) => {
+    const [selectedBusinessId, setSelectedBusinessId] = useState<string | undefined>(undefined);
+
+    useEffect(() => {
+        if (person) {
+            setSelectedBusinessId(person.adscrito_al_negocio_id);
+        }
+    }, [person]);
+
+    if (!isOpen || !person) return null;
+
+    const handleSave = () => {
+        onConfirm(selectedBusinessId);
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={`Asignar Negocio a ${person.name}`} className="!bg-white">
+             <div className="space-y-4 text-gray-800">
+                <p>Selecciona el negocio al que este repartidor estará adscrito. Si es independiente, elige esa opción.</p>
+                <select
+                    value={selectedBusinessId || ''}
+                    onChange={(e) => setSelectedBusinessId(e.target.value || undefined)}
+                    className="w-full p-2 border rounded-md bg-gray-50 border-gray-300 text-gray-900 focus:ring-purple-500 focus:border-purple-500"
+                >
+                    <option value="">Independiente</option>
+                    {businesses.map(b => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                </select>
+             </div>
+             <div className="mt-6 flex justify-end gap-4">
+                <Button onClick={onClose} variant="secondary" className="!bg-gray-200 !text-gray-800 hover:!bg-gray-300 !border-gray-300">Cancelar</Button>
+                <Button onClick={handleSave} variant="primary" className="!bg-purple-600 !text-white hover:!bg-purple-700 !border-transparent">Guardar Asignación</Button>
+            </div>
+        </Modal>
+    );
+};
+
 
 const iconBusiness = new L.Icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
@@ -138,6 +183,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     const [deliveryLoading, setDeliveryLoading] = useState(true);
     const [deliveryError, setDeliveryError] = useState<string | null>(null);
     const [deliveryModalState, setDeliveryModalState] = useState<{ isOpen: boolean; person: DeliveryPerson | null; action: 'approve' | 'reject' | 'activate' | 'deactivate' | null }>({ isOpen: false, person: null, action: null });
+    const [assignmentModalState, setAssignmentModalState] = useState<{ isOpen: boolean; person: DeliveryPerson | null }>({ isOpen: false, person: null });
     
     // State for Statistics
     const [allOrders, setAllOrders] = useState<Order[]>([]);
@@ -201,6 +247,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     useEffect(() => {
         fetchData();
     }, []);
+
+    // FIX: Moved from renderContent to the top level of the component.
+    // This effect resets filters whenever the main view changes.
+    useEffect(() => {
+        setSearchQuery('');
+        setRoleFilter('ALL');
+        setBusinessCategoryFilter('ALL');
+        setBusinessApprovalFilter('ALL');
+        setDeliveryApprovalFilter('ALL');
+        setDeliveryOnlineFilter('ALL');
+        setSortConfig({ key: 'name', direction: 'ascending' });
+        setStatsDateRange({ start: '', end: '' });
+        setStatsBusinessId('ALL');
+        setStatsDeliveryId('ALL');
+    }, [currentView]);
 
     // --- USER MANAGEMENT LOGIC ---
     const handleUpdateUser = async (userId: string, updates: Partial<Profile>) => {
@@ -325,6 +386,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
         }
         setDeliveryModalState({ isOpen: false, person: null, action: null });
     };
+
+    const openAssignmentModal = (person: DeliveryPerson) => {
+        setAssignmentModalState({ isOpen: true, person });
+    };
+
+    const handleConfirmAssignment = (businessId: string | undefined) => {
+        if (assignmentModalState.person) {
+            handleUpdateDeliveryPerson(assignmentModalState.person.id, { adscrito_al_negocio_id: businessId });
+        }
+        setAssignmentModalState({ isOpen: false, person: null });
+    };
+
 
     const sortedAndFilteredDeliveryPeople = useMemo(() => {
         let filtered = deliveryPeople.filter(p => {
@@ -558,6 +631,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
             rejected: { text: 'Rechazado', color: 'danger' as const },
         };
         const approvalInfo = approvalStatusMap[person.approvalStatus];
+        const affiliatedBusinessName = useMemo(() => {
+            return businesses.find(b => b.id === person.adscrito_al_negocio_id)?.name || 'Independiente';
+        }, [person.adscrito_al_negocio_id, businesses]);
 
         return (
             <tr className="border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors">
@@ -571,6 +647,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                         <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 mr-1"/> {person.rating}
                     </div>
                 </td>
+                <td className="p-4 align-top text-gray-800 font-medium">{affiliatedBusinessName}</td>
                 <td className="p-4 align-top">
                     <Badge color={person.is_online ? 'success' : 'secondary'}>{person.is_online ? 'En Línea' : 'Offline'}</Badge>
                 </td>
@@ -604,6 +681,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                                 </DropdownMenuItem>
                             )
                         )}
+                        <div className="border-t my-1 border-gray-200"></div>
+                        <DropdownMenuItem onClick={() => openAssignmentModal(person)}>
+                            <div className="flex items-center"><Briefcase className="w-4 h-4 mr-2" /> Asignar Negocio</div>
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => { /* Implement view details */ }}>
                             <div className="flex items-center"><ClipboardList className="w-4 h-4 mr-2" /> Ver Documentos</div>
                         </DropdownMenuItem>
@@ -749,6 +830,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                                 <SortableHeader sortKey="name">Repartidor</SortableHeader>
                                 <SortableHeader sortKey="vehicle">Vehículo</SortableHeader>
                                 <SortableHeader sortKey="rating">Rating</SortableHeader>
+                                <th scope="col" className="p-4">Adscrito a</th>
                                 <th scope="col" className="p-4">En Línea</th>
                                 <th scope="col" className="p-4">Aprobación</th>
                                 <th scope="col" className="p-4">Estado Activo</th>
@@ -820,20 +902,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
 
 
     const renderContent = () => {
-        // Reset filters when switching views
-        useEffect(() => {
-            setSearchQuery('');
-            setRoleFilter('ALL');
-            setBusinessCategoryFilter('ALL');
-            setBusinessApprovalFilter('ALL');
-            setDeliveryApprovalFilter('ALL');
-            setDeliveryOnlineFilter('ALL');
-            setSortConfig({ key: 'name', direction: 'ascending' });
-            setStatsDateRange({ start: '', end: '' });
-            setStatsBusinessId('ALL');
-            setStatsDeliveryId('ALL');
-        }, [currentView]);
-
         switch (currentView) {
             case 'overview':
                  return (
@@ -928,6 +996,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                 title="Confirmar Acción"
                 message={`¿Estás seguro de que quieres ${deliveryModalState.action} a ${deliveryModalState.person?.name}?`}
                 confirmText={`Sí, ${deliveryModalState.action}`}
+            />
+            <AssignmentModal
+                isOpen={assignmentModalState.isOpen}
+                onClose={() => setAssignmentModalState({ isOpen: false, person: null })}
+                onConfirm={handleConfirmAssignment}
+                person={assignmentModalState.person}
+                businesses={businesses}
             />
         </div>
     );
